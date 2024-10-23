@@ -5,9 +5,11 @@ import pandas as pd
 import json
 import csv
 from pathlib import Path 
-import pprint 
+import pprint
+
 from createROE import *
 from getWeekdayPastYears import get_same_weekday_past_years
+from getFromDataFrame import getFromDataFrame
 
 # 銘柄情報取得
 ticker = '9346.T'  # 株の銘柄コード
@@ -22,6 +24,8 @@ financials = stock.financials
 balances = stock.balance_sheet
 history = stock.history(period="5y")
 cashflow = stock.cashflow
+
+
 
 output = Path('output/'+ticker)
 output.mkdir(parents=True, exist_ok=True)
@@ -58,16 +62,17 @@ market_cap = info.get('marketCap', '---')
 
 # # 決算データ
 closing_dates = financials.head(0)
-eps = financials.loc['Basic EPS']
-net_income = financials.loc['Net Income']
-sales = financials.loc['Total Revenue']
+eps = getFromDataFrame(financials, 'Basic EPS') 
+net_income = getFromDataFrame(financials, 'Net Income')
+sales = getFromDataFrame(financials, 'Total Revenue')
 
 # 自己資本と総資産を取得
-shareholder_equity = balances.loc['Stockholders Equity']
-total_assets = balances.loc['Total Assets']
+shareholder_equity = getFromDataFrame(balances, 'Stockholders Equity')
+total_assets = getFromDataFrame(balances, 'Total Assets')
 
 # # 財務データ
-operating_cf = cashflow.loc['Operating Cash Flow']
+operating_cf = getFromDataFrame(cashflow, 'Operating Cash Flow')
+
 
 # 自己資本比率の計算
 equity_ratio = (shareholder_equity / total_assets) * 100
@@ -89,17 +94,3 @@ data = [
 ]
 
 pprint.pprint(data)
-
-data = [
-    ['銘柄コード', ticker, 'NASDAQ', 'IT・テクノロジー', 'テクノロジー'],
-    weekday[::-1],
-    ['終値'] + closing_prices.tolist(),
-    ['配当金', dividend_yield, '配当利回り', payout_ratio, 'PER', pe_ratio, market_cap],
-    ['決算日'] + closing_dates.columns.strftime('%Y-%m-%d').tolist(),
-    ['EPS'] + eps.tolist(),
-    ['自己資本比率 (%)'] + equity_ratio.tolist(),
-    ['営業CF (百万)'] + operating_cf.tolist(),
-    ['ROE (%)'] + roe.tolist(),
-    ['純利益 (百万)'] + net_income.tolist(),
-    ['売上高 (百万)'] + sales.tolist()
-]
