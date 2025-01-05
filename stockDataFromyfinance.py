@@ -7,13 +7,15 @@ import csv
 from pathlib import Path 
 import pprint
 
-from createROE import *
+# from createROE import *
 from getWeekdayPastYears import get_same_weekday_past_years
 from getFromDataFrame import getFromDataFrame
 from formatterData import formatter
 
 # 銘柄情報取得
-ticker = '9346.T'  # 株の銘柄コード
+# ticker = '9346.T'  # 株の銘柄コード
+# ticker = 'AAPL'
+ticker = '6758.T'
 
 # 必要な情報を取得
 weekday = get_same_weekday_past_years(5)
@@ -23,8 +25,10 @@ stock = yf.Ticker(ticker)
 info = stock.info
 financials = stock.financials
 balances = stock.balance_sheet
-history = stock.history(period="5y")
+# history = stock.history(period="5y")
+history = stock.history(period='max')
 cashflow = stock.cashflow
+actions = stock.actions
 
 output = Path('output/'+ticker)
 output.mkdir(parents=True, exist_ok=True)
@@ -35,6 +39,7 @@ financials.sort_index(axis='index').to_csv('output/'+ticker+'/financials.csv')
 balances.sort_index(axis='index').to_csv('output/'+ticker+'/balances.csv')
 history.sort_index(axis='index').to_csv('output/'+ticker+'/history.csv')
 cashflow.sort_index(axis='index').to_csv('output/'+ticker+'/cashflow.csv')
+actions.sort_index(axis='index').to_csv('output/'+ticker+'/actions.csv')
 
 # 過去5年分の終値と日付
 closing_prices = history['Close'].filter(regex=dateHistoryStr, axis=0)
@@ -54,6 +59,8 @@ if len(closing_prices) < required_count:
     closing_prices = closing_prices.interpolate(method='linear')
 
 # # 配当情報や財務指標
+short_name = info.get('shortName', '---')
+dividend = actions.tail(1).iloc[0, 0]
 dividend_yield = info.get('dividendYield', '---')
 payout_ratio = info.get('payoutRatio', '---')
 pe_ratio = info.get('trailingPE', '---')
@@ -79,10 +86,11 @@ roe = net_income / shareholder_equity
 
 # # 表のデータ作成
 data = [
+    [short_name],
     ['銘柄コード', ticker, 'NASDAQ', 'IT・テクノロジー', 'テクノロジー'],
     weekday[::-1],
     ['終値'] + closing_prices.tolist(),
-    ['配当金', dividend_yield, '配当利回り', payout_ratio, 'PER', pe_ratio, market_cap],
+    ['配当金', dividend, '配当利回り', dividend_yield, '配当性向', payout_ratio, 'PER', pe_ratio, '時価総額（百万）', market_cap],
     ['決算日'] + closing_dates.columns.strftime('%Y-%m-%d').tolist(),
     ['EPS'] + eps.tolist(),
     ['自己資本比率 (%)'] + equity_ratio.tolist(),
@@ -93,5 +101,6 @@ data = [
 ]
 
 pprint.pprint(data)
+
 
 pprint.pprint(formatter(data))
