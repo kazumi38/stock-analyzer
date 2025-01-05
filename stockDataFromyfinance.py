@@ -10,6 +10,7 @@ import pprint
 from createROE import *
 from getWeekdayPastYears import get_same_weekday_past_years
 from getFromDataFrame import getFromDataFrame
+from formatterData import formatter
 
 # 銘柄情報取得
 ticker = '9346.T'  # 株の銘柄コード
@@ -24,8 +25,6 @@ financials = stock.financials
 balances = stock.balance_sheet
 history = stock.history(period="5y")
 cashflow = stock.cashflow
-
-
 
 output = Path('output/'+ticker)
 output.mkdir(parents=True, exist_ok=True)
@@ -94,3 +93,5 @@ data = [
 ]
 
 pprint.pprint(data)
+
+pprint.pprint(formatter(data))
